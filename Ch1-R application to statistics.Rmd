@@ -1,0 +1,167 @@
+---
+# title: "Chapter 1 - R application to statistics"
+# Created: December 2018
+# Author: Guisen Xue
+#  Version: 1.0
+---
+```{r}
+# Example 1 and 2 are measure of central tendency, spread and skewness
+#Example 1: data table occupancy detection
+#Import the data table from CSV to R (Windows)
+
+rm(list = ls())   # commands that basically remove everything in the working environment
+Mydata= read.csv("Ch1_Occupancy_Detection.csv") #click the "..." (Go to directory) on the lower right side, and find the file folder that saves your R commands and data tables (both of them must be in the same file folder). Then click the more-> Set As Working Directory.
+
+Mydata2<-Mydata
+#How to run each line of code? Mac: Cmd+Return, Windows: Ctrl+Enter
+head(Mydata)                  #Show the first 6 rows of the data table
+head(Mydata$Temperature)      #Show the first six numbers of Mydata$Temperature
+mean(Mydata$Temperature)      #get the mean of Mydata$Temperature
+mean(Mydata[,1])              #get the mean of the first column of Mydata (which is the same as MyData$Temperature)
+                              #watch the comma
+                              #generally calculating the mean of each row means nothing, because they are different variables
+sd(Mydata$Temperature)        #get the standard deviation of Mydata$Temperature
+var(Mydata$Temperature)       #get the variance of Mydata$Temperature
+quantile(Mydata$Temperature)  #get the quantile of Mydata$Temperature
+
+range(Mydata$Temperature)
+summary(Mydata$Temperature)   #5-number summary (min, Q1, Median, Q3, max) plus mean of MyData$Temperature
+boxplot(Mydata[,c(1,2)])      # boxplot of temperature and humidity (first two columns)
+
+#install.packages('moments')   #install the 'moments' package which has an implementation of Skewness statistics
+library(moments)
+skewness(Mydata$Temperature)   #if skewness is positive, the data is right skewed; if negative, left skewed
+
+#sapply(Mydata,mean)
+#sapply(Mydata,var)
+#sapply(Mydata,quantile)
+
+```
+
+
+
+```{r}
+#Example 2: 
+#install.packages("ISLR")
+library(ISLR)   #ISLR is the collection of data-sets used in the book 'An Introduction to Statistical Learning with Applications in R'
+#Wage            #Wage is a data table of 3000 observations and 11 variables
+head(Wage)
+summary(Wage)   #summarize all the variables
+hist(Wage$wage)  #show the histogram of the variable "wage"
+library(moments)
+skewness(Wage$wage)        # the skewness of the variable wage
+hist(Wage$logwage)
+skewness(Wage$logwage)     # Log of workers wage
+summary(Wage$wage)    
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+# Example 3: Measure of relationship- data table from package ISLR
+
+library(ISLR)
+
+plot(Wage$age,Wage$wage)  #scatter plot of age and wage and x is age (y wage)
+cor(Wage$age,Wage$wage)   #calculate the correlation coefficient r
+cor(Wage$wage,Wage$age)   # correlation is symmetric
+cor(Wage$wage*10,Wage$age*5+10)  #correlation is scale free
+      #When some variables are cagegorical, they can be converted to numeric
+levels(Wage$education)    #show the levels of variable education
+as.numeric(Wage$education)
+head(as.numeric(Wage$education))
+cor(as.numeric(Wage$education),Wage$wage) #The correlation of wage and education, the latter of which is converted to numeric
+
+#install.packages("corrplot")
+library(corrplot)               #The corrplot package is a graphical display of a correlation matrix, confidence interval.
+Wage_num = Wage[,c(1,2,10,11)]  #select numeric variables in data table
+pairs(Wage_num)                 # produce a metrix of scattorplots
+corrplot(cor(Wage_num),method = "pie")  #there are six methods available: "circle", "square", "ellipse", "number", "shade", "color", "pie"
+
+#https://cran.r-project.org/web/packages/corrplot/vignettes/corrplot-intro.html
+
+```
+
+
+```{r}
+#Example 4: Measure of relationship- data from manual typing
+
+#define A,B and C
+A=c(1,2,3,4,5)
+B=c(11,10,14,15,17)
+C=c(10,11,14,15,17)  # The order of numbers changes the result
+
+cor(A,B)
+cor(A,C)
+plot(A,C)
+```
+
+
+```{r}
+#Example 5: normal distribution
+#pnorm(z) returns the area under the standard normal curve from -inf to z (lower-tailed)
+pnorm(0)
+pnorm(1)
+
+#examine the 68,95,99.7 rule 
+pnorm(1)-pnorm(-1)
+pnorm(2)-pnorm(-2)
+pnorm(3)-pnorm(-3)
+
+#if x=6, sd=2,mu=3, z=(x-mu)/sd=(6-3)/2=1.5
+pnorm(1.5)
+pnorm(6,mean = 3,sd=2)
+
+# if we want to know the area on the right side of z
+pnorm(1,lower.tail = FALSE)
+
+#If given the probability, return z score
+qnorm(0.5)
+qnorm(0.84,mean = 3,sd=2)
+
+#generate random numbers that follow normal distribution with different mean and sd
+rnorm(50) # by default mean=0, and sd=1 (random numbers that follow standard normal distribution)
+Test = rnorm(100,mean = 3,sd=2) #genertate 100 random numbers that follow normal distribution with mean=3 and sd=2
+hist(Test)
+
+
+```
+
+```{r}
+#about apply(),lapply
+m1 = matrix(C<-(1:10),nrow = 5,ncol = 6)
+m1
+m2=apply(m1,2,median) #apply(x,margin,fun), when margin =1, manipulation is performed on rows; when margin =2, manipulation on columns;margin=c(1,2),on rows and columns
+#fun can be mean, median, sum, min,max
+m2
+
+movies = c("SPYDERMAN","BATMAN","VERTIGO","CHINATOWN")
+movies_lower = lapply(movies,tolower) #change a string value to lower case with tolower function
+
+str(movies_lower)
+
+movies_lower=unlist(lapply(movies,tolower))
+str(movies_lower)
+
+#sapply function does the same jobs as lapply,but returns a vector
+dt=cars
+lmn_cars=lapply(dt,min)
+smn_cars=sapply(dt,min)
+lmn_cars
+smn_cars
+
+#userdefined function
+avg=function(x){(min(x)+max(x))/2}
+fcars=sapply(dt,avg)
+fcars
+
+#tapply: computes a measure (mean, median, min, max, etc..) or a function for each factor variable in a vector. 
+data("iris")
+tapply(iris$Sepal.Width,iris$Species,median)
+
+```
+
