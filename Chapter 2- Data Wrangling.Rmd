@@ -1,0 +1,700 @@
+---
+title: "Chapter 2 - Data Wrangling"
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+##############################################
+#       created: Dec. 2018                   #
+#       @author: Dr. Guisen Xue              #
+#       @place: Kent State University        #
+#       @version: 1.0                        #
+#       @File: Data Selection and filtering   #
+##############################################
+
+
+# step 1: install package dplyr
+# install.packages("dplyr")
+ library(dplyr)
+
+# step 2: import data from csv file to R
+# By default the top row shows the names of variables, and the most left column shows the names of labels.
+ mydata = read.csv("chap2_sampledata.csv")
+# To see the first six rows of chap2_sampledata
+ head(mydata)
+
+```
+
+```{r}
+ 
+ # step 3: implement the selection
+ 
+#   part (1): select rows
+ 
+#    Function 1: Randomly select n rows
+ newdata <- sample_n(mydata,3)
+ 
+#    Function 2: Randomly select fraction of rows
+ newdata1 <- sample_frac(mydata,0.1)
+ 
+ #   Function 3: Remove duplicate rows based on all the variables (complete row)
+ x1 = distinct(mydata)
+ # The new data x1 is the same as mydata because in our example there is not duplicate rows
+ 
+ #  Function 4: Remove duplicate rows based on a variable
+ x2=distinct(mydata,Index,.keep_all = TRUE)
+ # If the variable index is the same, remove extra rows and only the first row is left
+ 
+ # Function 5: Remove Duplicates Rows based on multiple variables
+ x3=distinct(mydata,Index,Y2010,.keep_all = TRUE)
+ # Use two variables - Index, Y2010 to determine uniqueness.
+ 
+ # Select observations
+# When selecting observations, the last letter within "[]" is always ","
+  mydata8 = mydata[1:5,]  #select the first 5 observations (all columns)
+  mydata9 = mydata[1:5]   #select all observations and the first 5 variables
+  mydata90= mydata[mydata$Y2007>1700000 & mydata$Index=="M",]
+
+```
+ 
+ 
+```{r}
+  #   part (2): select columns (variables)
+ 
+ #  Function 6: Select variables
+#The following code selects variables "Index", and variables from "State" to "Y2008".
+  mydata2 = select(mydata, Index, State:Y2008)
+ 
+  #The following code selects variables from Index to Y2008
+  mydata3 = select(mydata,Index:Y2008)
+  
+# The following code selects 4 variables: Index, State, Y2002, and Y2005.
+  mydata4 = select(mydata,Index,State,Y2002,Y2005)
+ 
+```
+
+```{r}
+  
+# part (3): Drop variables
+  
+# Function 7: drop variables
+  mydata5 = select(mydata,-Index,-State) # Drop variable "Index"" and "State""
+  mydata6 = select(mydata,-c(Index,State,Y2008)) # Drop variables "Index", "State", and "Y2008"
+# minus(-) sign before a variable tells R to drop the variable
+
+# Function 8: exclude variables
+  mydata7 = mydata[c(-1,-2,-5,-6)]
+# exclude the first, second, fifth and sixth variables
+  
+# Function 9: selecting or dropping variables starting with 'Y'
+  mydata8=select(mydata,starts_with("Y"))  #Select variables starts with 'Y'
+  mydata9=select(mydata,-starts_with("Y"))  #Drop variables starts with "Y"
+  
+# Function 10: Reorder variables (keep one variable in the front)
+  mydata10=select(mydata,State,everything())
+  
+# Function 11: Rename variables
+  mydata11=rename(mydata,state=State)   #The later one of "=" is the variable that requires renaming and the former is new name
+  
+# Function 12: selection with subset function
+  mydata12=subset(mydata,Y2007>1800000|Y2007<1500000,select = c(State,Y2007,Y2008))
+ 
+```
+
+
+```{r}
+####Part 4: Filter
+  #Filter is used to subset data with matching logical conditions
+  
+  #Filter rows
+  #install.packages("bindrcpp")
+library(bindrcpp)
+  mydata13=filter(mydata,Index=="M")    #The rows whose Index is M
+  mydata14=filter(mydata,Index %in% c("M","N"))  #Multiple selection criteria (%in%)
+  mydata15=filter(mydata,!Index %in% c("M","N")) #Not condition
+  
+```
+
+
+```{r}
+####Part 5: Summarize function
+    summarize(mydata,Y2015_mean=mean(Y2015),Y2015_med=median(Y2015))  #summarize selected variables
+    summarise_at(mydata,vars(Y2005,Y2006),funs(n(),mean,median)) #summarize mutiple variables, vars=variables,funs=functions
+    summarize_if(mydata,is.numeric,funs(n(),mean,median)) #summarize conditionally
+    
+    mydata %>% group_by(Index) %>% summarise(mean_income = mean(Y2002,na.rm=TRUE))
+    
+```
+
+```{r}
+  ###Part 6: Arrange function (the default sorting order is ascending, if you need to sort be descending order, desc(Index))
+    arrange(mydata,Index,Y2011)  #First ascending order of Index, and then the ascending order of Y2011
+    arrange(mydata,desc(Index),Y2011) #First descending order of Index, and then ascending order of Y2011
+```
+
+```{r}    
+    
+####Part 7: group_by (group data by categorical variable)
+    t=group_by(mydata,State)
+    t1=mydata %>% group_by(State)
+```
+
+```{r}
+####Part 8: Mutate()  adds new columns to a data frame by transforming existing ones 
+    mydata16=mutate(mydata,Change_percentage=(Y2015-Y2014)*100/Y2014)
+  
+```
+
+```{r}
+####Part 9: Pipe()   # pipe the output from one function to the input of another function 
+    #If you use RStudio, you can type the pipe with Ctrl + Shift + M if you have a PC or Cmd + Shift + M if you have a Mac.
+    #Using mydata4 as an example to show how to use pipe function
+    head(select(mydata,Index,State,Y2002,Y2005))  #Show the first 6 rows (observations of the selected variables)
+    mydata %>% select(Index,State,Y2002,Y2005) %>% head #the result is the same as the above one
+    #another example
+    mydata17=sample_n(select(mydata,Index,State),10)
+    mydata18=mydata %>% select(Index,State) %>% sample_n(10)
+    
+  
+```
+  
+
+```{r}
+ # commands that basically remove everything in the working environment
+  rm(list = ls())
+
+  library(dplyr)
+  head(mtcars) #display the first 6 rows
+  mtcars       # display the data table of mtcars
+  
+  #Question 1: what is the average hp (summarise) for each type (group_by) of cyl?
+  Results1 = mtcars %>% group_by(cyl) %>% summarise(mean(hp))
+  Results1
+  
+  #Question 2: what is the maximal hp for each type of cyl?
+  Results2 = mtcars %>% group_by(cyl) %>% summarise(max(hp))
+  Results2
+  
+  #Question3: what is the count, minimal hp and mean mpg for each type of cyl?
+  Results3 = mtcars %>% group_by(cyl) %>% summarise(n(),mean(mpg),min(hp)) #n() count the quantity of observations in each group
+  Results3
+  Results4 = mtcars %>% group_by(cyl) %>% summarise(Count=n(),Mean_mpg=mean(mpg),Minimum_hp=min(hp))
+  as.data.frame(Results4)
+  #Results4
+```
+
+```{r}
+#Data Visualization 
+rm(list = ls())
+
+library(dplyr)
+#install.packages("mlbench")  #The data table of Boston housing is from the package of "mlbench"
+library(mlbench)
+data(BostonHousing)
+
+summary(BostonHousing) #deploy the mean and five-number summary
+library(psych)
+barplot(table(BostonHousing$medv),xlab = "Median_price",ylab = "Frequency",col = "red",main = "Barchart")
+boxplot(BostonHousing$medv,ylab = "Median_value", col = "blue")
+hist(BostonHousing$crim) #histogram
+
+plot(BostonHousing$crim,BostonHousing$medv) #scatterplot (Numeric-Numeric), the former is X and the latter is Y 
+
+##install.packages("psych")
+library(psych)
+describeBy(BostonHousing$medv,BostonHousing$chas)
+
+table(BostonHousing$chas,BostonHousing$rad)
+
+library(ISLR)
+table(Wage$race,Wage$education)
+
+
+#mutivariate analysis
+library(ISLR)
+pairs(BostonHousing[,c(1,7:11)])
+
+library(corrplot)
+corrplot(cor(BostonHousing[,c(1,7:11)]))
+```
+
+
+
+```{r}
+#######How to address data missingness?#####
+#Part 1-Listwise deletion and variable removal method (dropping rows or columns, dropping observations or variables)
+
+#Example 1: Define data table
+a= c(1,NA,NA,4)
+b= c(NA,2,8,7)
+c= c(NA,1,2,9)
+d=c(2,5,7,5)
+x= data.frame(a,b,c,d)
+x
+
+
+#is.na()function
+is.na(x)
+#Calculate means of rows and columns
+rowMeans(x)
+colMeans(x)
+
+colSums(is.na(x)) #the sum of missing values in a specific column.
+rowSums(is.na(x)) #the sume of missing values in a specific row.
+
+#calculate the percentage of "NA" each row and each column
+rowMeans(is.na(x))
+colMeans(is.na(x))
+
+#Assume that when the percentage of missing values in each row or column is larger than 40%, then delete the row or column.
+x_rowfiltered=x[rowMeans(is.na(x))<0.4,]
+x_rowfiltered
+
+x_colfiltered=x[,colMeans(is.na(x))<0.4]
+x_colfiltered
+```
+
+```{r}
+
+#Example 2: use the example from ISLR, and delete the rows and columns that have one or more missing values.
+rm(list = ls())  #clean previous data
+library(ISLR)
+mydata=airquality
+
+colMeans(is.na(mydata))
+mydata_colfiltered=mydata[,colMeans(is.na(mydata))<0.00001] #delete the column if only it has missing values.
+mydata_colfiltered
+
+rowMeans(is.na(mydata))
+rowMeans(is.na(mydata))
+mydata_rowfiltered=mydata[rowMeans(is.na(mydata))<0.00001,] #delete the row if only it has missing values.
+```
+
+
+```{r}
+
+#######Part 2: Single imputation - Mean Imputation
+ImputData=airquality
+colMeans(is.na(ImputData))
+mean(ImputData$Ozone,na.rm = TRUE)     #na.rm = TRUE-when calculating the mean, only calculate the numeric values and delete the value of "NA".
+mean(ImputData$Solar.R,na.rm = TRUE)
+ImputData[is.na(airquality$Ozone),"Ozone"]=mean(airquality$Ozone,na.rm = TRUE)
+ImputData[is.na(airquality$Solar.R),"Solar.R"]=mean(airquality$Solar.R,na.rm = TRUE)
+colMeans(is.na(ImputData))
+
+#################################- Median Imputation
+ImputData1=airquality
+colMeans(is.na(ImputData1))
+median(airquality$Ozone,na.rm = TRUE)     #na.rm = TRUE---when calculating the mean or median of a column, only calculate the numeric values and delete the value of "NA".
+ImputData1[is.na(airquality$Ozone),"Ozone"]=median(airquality$Ozone,na.rm = TRUE)
+ImputData1[is.na(airquality$Solar.R),"Solar.R"]=median(airquality$Solar.R,na.rm = TRUE)
+
+colMeans(is.na(ImputData1))
+
+################################- Mode Imputation
+ImutData2=airquality
+colMeans(is.na(ImutData2))
+mode(ImutData2$Ozone)
+
+ImutData2[is.na(airquality$Ozone),"Ozone"]=mode(airquality$Ozone)
+ImutData2[is.na(airquality$Solar.R),"Solar.R"]=mode(airquality$Solar.R)
+
+colMeans(is.na(ImutData2))
+
+###############################-Mean imputation-Hmisc package
+rm(list = ls())  #clean previous data
+#install.packages("Hmisc")     #install package and load library
+library(Hmisc)
+HmiscData=airquality           #load data
+
+summary(HmiscData)
+
+#impute the first column "Ozone"with mean value
+HmiscData$Ozone=with(HmiscData,impute(Ozone,mean))
+#HmiscData
+colMeans(is.na(HmiscData))
+
+#impute the second variable "Solar.R" with median
+HmiscData$Solar.R=with(HmiscData,impute(Solar.R,median))
+colMeans(is.na(HmiscData))
+
+#impute the second vraible with random
+#HmiscData$Solar.R=with(HmiscData,impute(Solar.R,Random)) #Wrong code
+```
+
+
+```{r}
+
+#######Part 3: Regression imputation method
+#https://web.maths.unsw.edu.au/~dwarton/missingDataLab.html
+#https://www.kdnuggets.com/2017/09/missing-data-imputation-using-r.html
+
+#install the required packgaes and load library
+install.packages("mice")
+install.packages("vim")
+install.packages("lattice")
+   
+#NHANES dataset (National Health and Nutrition Examination Survey data by the US National Center for Health Statistics).
+
+library(mice)
+library(VIM)
+library(lattice)
+data(nhanes)
+#NHANES dataset (National Health and Nutrition Examination Survey data by the US National Center for Health Statistics).
+
+#Look at the data
+head(nhanes)
+str(nhanes)
+
+#The age values are only 1, 2 and 3 which indicate the age bands 20-39, 40-59 and 60+ respectively. These values are better represented as factors rather than numeric. But when age takes the values of 1,2 and 3, R just automatically recognize age as numerical.
+#convert age to be categorical
+nhanes$age=as.factor(nhanes$age)
+
+#understand the missing value pattern
+md.pattern(nhanes)
+
+#How to explain the output
+#    age hyp bmi chl
+#13   1   1   1   1  0
+#3    1   1   1   0  1
+#1    1   1   0   1  1
+#1    1   0   0   1  2
+#7    1   0   0   0  3
+#     0   8   9  10 27
+
+# The 1's under each variable represents their presence and the 0's absence.
+# There are 13 obserations whose all 4 values of each variable are present;
+# There are 2 observations whose age, hyp,and bmi are present, but chl absent;
+# There are 1 observation whose age, hyp and chl are present, but bmi absent;
+# There are 1 observation whose age and chl are present, but hyp and bmi absent;
+# There are 7 observations whos age is absent, but hyp, bmi and chl absent.
+# The most right column represents the number of absent values of each type.
+# The last row means the total number of absent values of each variable.
+
+#plot the missing values
+nhanes_miss = aggr(nhanes, col=mdc(1:2), numbers=TRUE, sortVars=TRUE, labels=names(nhanes), cex.axis=.7, gap=3, ylab=c("Proportion of missingness","Missingness Pattern"))
+
+#draw a margin plot which is also part of VIM package.
+#Drawing margin plot
+marginplot(nhanes[, c("chl", "bmi")], col = mdc(1:2), cex.numbers = 1.2, pch = 19)
+#The margin plot, plots two features at a time. The red plot indicates distribution of one feature when it is missing while the blue box is the distribution of all others when the feature is present. This plot is useful to understand if the missing values are MCAR. For MCAR values, the red and blue boxes will be identical.
+
+#Linear regression imputation
+# do simple linear regression of chl on age and bmi
+#delete observations with missing values, and fit in a linear model
+#Lm function finishes these two steps, and it is not valid for MAR data
+fit.cc = lm(chl ~ age + bmi, data=nhanes)
+summary(fit.cc)
+
+
+#Imputing missing values using mice
+imp= mice_imputes = mice(nhanes, m=5, maxit = 40)
+# Three parameters are used for the package. The first is the dataset, the second is the number of times the model should run. I have used the default value of 5 here. This means that I now have 5 imputed datasets. Every dataset was created after a maximum of 40 iterations which is indicated by "maxit" parameter.
+
+# the methods used for imputing:
+#What methods were used for imputing
+mice_imputes$method
+
+# we want to apply for each of the 5 imputed datasets as follows
+fit.mi = with(data=imp, exp = lm(chl ~ age + bmi))
+
+
+# Next, we combine all the results of the 5 imputed datasets using the pool() function
+combFit = pool(fit.mi) 
+# Note that the function pool() works for any object having BOTH coef() and vcov() methods, such as lm, glm and Arima, also for lme in nlme package.
+round(summary(combFit),2)
+
+# This result shows that bmi and age are significant. But is m=5 imputed datasets sufficient? Maybe, but if possible, it would be better to increase it to check, e.g. m=20:
+
+# Increase the number of imputations to m=20
+imp20 = mice(nhanes, m=20, printFlag=FALSE, maxit = 30, seed=2525)
+fit.mi20 = with(data=imp20, exp = lm(chl ~ age + bmi))
+combFit = pool(fit.mi20)
+round(summary(combFit),2)
+```
+
+```{r}
+#######Part 4: Model-based method----k-Nearest Neighbors imputation
+
+#install package and load library
+#install.packages("VIM")
+library(VIM)
+colMeans(is.na(airquality))
+
+#just impute the Ozone variable
+knnimpute=kNN(airquality,variable = c("Ozone"),k=4)
+
+colMeans(is.na(knnimpute))
+
+#impute all variables with missing values
+
+knnimputeall=kNN(airquality,k=4)
+colMeans(is.na(knnimputeall))
+
+head(knnimputeall)
+```
+
+
+```{r}
+###########Outliers
+
+
+#######Part 1: Implications of outliers
+rm(list = ls())  #clean previous data
+library(ISLR)
+mydata=cars
+
+cars1=cars[1:30,]        #original 30 data
+cars_outliers = data.frame(speed=c(19,19,20,20,20), dist=c(190, 186, 210, 220, 218))  # introduce outliers.
+cars2 <- rbind(cars1, cars_outliers)  # data with outliers.
+
+
+# Plot of data with outliers.
+# codes to allow for multipe plots in one figure
+# set my figure window to allow a 1 (row) by 3 (column) plotting space
+par(mfrow=c(1, 2))
+#speed is x(explanatory variable), and dist is y (response variable), xlim and ylim determine range of x and y,main represents the title of your plot, xlab and ylab show the characters of x and y
+#pch means points symbols (pch = 0,square,pch = 1,circle,pch = 2,triangle point up,pch = 3,plus,pch = 4,cross,pch = 5,diamond,pch = 6,triangle point down,pch = 7,square cross,pch = 8,star,pch = 9,diamond plus,pch = 10,circle plus,pch = 11,triangles up and down,pch = 12,square plus,pch = 13,circle cross,pch = 14,square and triangle down,pch = 15, filled square,pch = 16, filled circle,pch = 17, filled triangle point-up,pch = 18, filled diamond,pch = 19, solid circle,pch = 20,bullet (smaller circle),pch = 21, filled circle blue,pch = 22, filled square blue,pch = 23, filled diamond blue,pch = 24, filled triangle point-up blue,pch = 25, filled triangle point down blue)
+# col means color, cex tells you how big to magnify text (1 by default)
+# The cex functions file:///C:/Users/xgsen/Desktop/Courses/Business Analytics II/Contents/R commands and data tables/other/cex functions.jpg
+plot(cars2$speed, cars2$dist, xlim=c(0, 28), ylim=c(0, 230), main="With Outliers", xlab="speed", ylab="dist", pch="*", col="red", cex=2)
+
+abline(lm(dist~speed, data = cars2), col="blue", lwd=3, lty=2)   
+#abline -add one straight line to current graph
+#lm(), linear regression
+#line type (lty) can be specified using either text ("blank", "solid", "dashed", "dotted", "dotdash", "longdash", "twodash") or number (0, 1, 2, 3, 4, 5, 6). Note that lty = "solid" is identical to lty=1. 
+#To change line width, the argument lwd can be used.
+
+
+#plot of data without outliers
+plot(cars1$speed,cars1$dist,xlim=c(0, 28), ylim=c(0, 230), main="Outliers removed \n A much better fit!", xlab="speed", ylab="dist", pch="*", col="red", cex=2)
+abline(lm(dist~speed, data = cars1), col="blue", lwd=3, lty=2)
+
+```
+
+```{r}
+######Part 2: decect outliers- univariate
+rm(list = ls())  #clean previous data
+library(ISLR)
+mydata=cars
+
+cars1=cars[1:30,]        #original 30 data
+cars_outliers = data.frame(speed=c(19,19,20,20,20), dist=c(190, 186, 210, 220, 218))  # introduce outliers.
+cars2 <- rbind(cars1, cars_outliers)  # data with outliers.
+outliers = boxplot.stats(cars2$dist)$out   # outlier values.
+outliers
+boxplot(cars2$dist, horizontal=TRUE, main="Distance", boxwex=0.5) #boxwex=determines the width of the box 
+mtext(paste("Outliers: ", paste(outliers, collapse=", ")), cex=0.6)
+```
+
+```{r}
+####Part 3: Outliers Treatment
+####1 deleting outliers
+#Method 1: Just delete the numbers from outliers
+cars4=cars2[cars2$dist <80,]
+boxplot(cars4$dist)
+
+#Method 2: find the position and delete them.
+#First find the positions (which row and which comumn) of each outlier
+cars2[which(cars2$dist %in% outliers),]
+#Then delete the rows that contain the outliers.
+cars3=cars2[-which(cars2$dist %in% outliers),]
+cars3  #present the content of cars3 (the data after deleting the outliers)
+boxplot(cars3$dist)
+#https://datascienceplus.com/outlier-detection-and-treatment-with-r/
+```
+
+```{r}
+###2 Treating the outliers as missing values
+#install.packages("rAverage")
+#install.packages("tcltk")
+#library(tcltk)
+#library(rAverage)
+
+library(ISLR)
+mydata=cars
+
+cars1=cars[1:30,]        #original 30 data
+cars_outliers = data.frame(speed=c(19,19,20,20,20), dist=c(190, 186, 210, 220, 218))  # introduce outliers.
+cars2 <- rbind(cars1, cars_outliers)  # data with outliers.
+#outliers = boxplot.stats(cars2$dist)$out
+#cars20=cars2$dist      # cars20 is only the column of variable dist
+#cars20[cars20>79] = NA # Replace the value that is larger than 79 with NA
+#cars20                # Validate the effect of the replacement       
+#cars22=data.frame(cars2$speed,cars20) #reorganized the data table to realized the effect of replacement
+cars2[cars2$dist>79,"dist"] = NA  #This line of code replace the former 4 lines
+
+
+#Then implement the imputation or predication operations to the new data table cars22
+
+#cars2[cars2$dist >79,]=NA # change all the observations to NA
+
+```
+
+```{r}
+#########Part 3: Bivariate outliers
+rm(list = ls())  #clean previous data
+#install.packages("mlbench")  #The data table of Boston housing is from the package of "mlbench"
+library(mlbench)
+data(BostonHousing) #load the specific data sets or list the available datasets
+      #CHAS a factor with levels 1 if tract borders Charles River; 0 otherwise
+boxplot(medv~chas,data=BostonHousing)
+#the above lines boxplot the numeric variable medv and categorical varaible chas.
+
+#categorical x
+url <- "http://rstatistics.net/wp-content/uploads/2015/09/ozone.csv"
+ozone <- read.csv(url)
+boxplot(ozone_reading ~ Month, data=ozone, horizontal=TRUE,main="Ozone reading across months")
+
+#numeric x
+boxplot(ozone_reading~pressure_height,data=ozone,main="Boxplot for numeric pressure height")
+
+#convert numeric x to categorical
+boxplot(ozone_reading ~ cut(pressure_height, pretty(ozone$pressure_height)), data=ozone, main="Boxplot for Pressure height (categorial) vs Ozone", cex.axis=0.5)
+
+```
+
+
+```{r}
+#####Simple regression 
+library(mlbench)
+data(BostonHousing)
+
+fit=lm(medv~crim, data = BostonHousing)
+summary(fit)
+
+#usful functions
+coefficients(fit) # model coefficients
+confint(fit, level=0.95) # CIs for model parameters 
+fitted(fit) # predicted values
+residuals(fit) # residuals
+anova(fit) # anova table 
+vcov(fit) # covariance matrix for model parameters 
+influence(fit) # regression diagnostics
+```
+
+```{r}
+#####Multiple regression
+library(mlbench)
+data(BostonHousing)
+
+fit=lm(medv~crim+indus+tax, data = BostonHousing)
+summary(fit)
+
+```
+
+
+```{r}
+####Data transformation
+#Step 1: check the ranges of variables
+rm(list = ls())  #clean previous data
+library(mlbench)
+data(BostonHousing)
+#If we are interested in analyzing the relation of median value of owner-occupied homes in USD 1000's (medv) and per capita crime rate by town (crim), proportion of owner-occupied units built prior to 1940 (age), weighted distances to five Boston employment centres (dist), full-value property-tax rate per USD 10,000 (tax) and pupil-teacher ratio by town (ptratio), let's check the range of each variable first.
+range(BostonHousing$medv)
+range(BostonHousing$age)
+range(BostonHousing$dis)
+range(BostonHousing$ptratio)
+range(BostonHousing$crim)
+range(BostonHousing$tax)
+
+#Step 2: implement data transformation
+
+#  Mutate()  adds new columns to a data frame by transforming existing ones 
+
+#Add a new column to show the min-max transformation output
+BostonHousing_minmaxtrans_medv=mutate(BostonHousing,minmaxtrans_medv=(BostonHousing$medv-min(BostonHousing$medv))/(max(BostonHousing$medv)-min(BostonHousing$medv)))
+# or just show the transformation result in the vector
+z=(BostonHousing$medv-min(BostonHousing$medv))/(max(BostonHousing$medv)-min(BostonHousing$medv))
+
+#Add a new column to show the z-score transformation output
+BostonHousing_ztrans_medv=mutate(BostonHousing,ztrans_medv=(BostonHousing$medv-mean(BostonHousing$medv))/sd(BostonHousing$medv))
+
+#z-score transformation can be realized using scale() function, so z1=z2.
+
+z1=(BostonHousing$medv-mean(BostonHousing$medv))/sd(BostonHousing$medv)
+z2=scale(BostonHousing$medv)
+
+```
+
+
+```{r}
+####Handling skewness
+library(ISLR)
+library(moments)
+hist(Wage$wage)
+skewness(Wage$wage)
+
+
+hist(Wage$logwage)
+skewness(Wage$logwage)
+#logwage=log(Wage$wage,base = exp(1))
+Wage1= mutate(Wage,log(Wage$wage,base = exp(1)))
+
+```
+
+```{r}
+####Dummy variable
+#Dummy variables are artificially defined variables designed to convert a categorical variables with multiple levels into individual binary variables.
+#install.packages("caret")
+library(caret)
+library(ISLR)
+summary(Wage)
+simplemodel= dummyVars(~race,Wage)
+race_converted=predict(simplemodel,Wage)
+#The added variable include: "race.1. White, race.2. Black.....". The information is whether the observation belong to one of the variables.
+head(race_converted)
+```
+
+
+```{r}
+#####NZV variables removals
+rm(list = ls())  #clean previous data
+library(caret)
+mtcars2=cbind(mtcars,newvar1=1,newvar2=c("Reliable")) #add 2 new ZV variables
+summary(mtcars2)
+
+nzv=nearZeroVar(mtcars2) #Dedect the NZV variables
+nzv
+
+mtcars2_filtered=mtcars2[,-nzv] # Remove the NZV variables
+summary(mtcars2_filtered)
+```
+
+
+```{r}
+####PCA
+rm(list = ls())  #clean previous data
+library(caret)
+library(corrplot)
+#install.packages("AppliedPredictiveModeling")
+library(AppliedPredictiveModeling)
+data("segmentationOriginal")
+
+#Case is categorical variable and takes the value of "Train" and "Test"
+segData=subset(segmentationOriginal, Case=="Train")
+
+#Delete useless variables
+segData=segData[,-(1:3)]
+
+#detect and delete NZV
+nzv=nearZeroVar(segData)
+nzv
+segData=segData[,-nzv]
+
+ncol(segData)
+
+#implement z-score transformation and PCA at the same time
+PCA=preProcess(segData,method = c("center","scale","pca"))
+PCA
+
+segData_transformed=predict(PCA,segData)
+ncol(segData_transformed)
+```
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+
